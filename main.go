@@ -549,7 +549,7 @@ func main() {
 	log.Printf("Redis: %s", cfg.Redis.Address)
 	log.Printf("MongoDB: %s", cfg.MongoDB.Database)
 
-	// 2. Initialize all services (but don't start them yet)
+	// 2. Core Services - Initialize
 	geo, err := utils.NewGeoResolver(cfg.GeoIP.DBPath)
 	if err != nil {
 		log.Printf("⚠️  GeoIP DB not found at %s: %v", cfg.GeoIP.DBPath, err)
@@ -589,7 +589,16 @@ func main() {
 	topologyService := services.NewTopologyService(cache, discovery)
 	comparisonService := services.NewComparisonService(cache)
 
-	// 3. Setup HTTP Server
+	// 3. Start CRITICAL services immediately (before HTTP server)
+	log.Println("=== Starting Critical Services ===")
+	
+	creditsService.Start()
+	log.Println("✓ Credits Service started")
+	
+	discovery.Start()
+	log.Println("✓ Node Discovery started")
+
+	// 4. Web Server Setup
 	e := echo.New()
 	e.HideBanner = true
 
@@ -608,11 +617,15 @@ func main() {
 		}
 	})
 
+	// FIX THE TYPO - both spellings for compatibility
+	e.GET("/kaithhealthcheck", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
 	e.GET("/kaithheathcheck", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
 
-	// Setup all handlers
+	// 5. Handlers
 	h := handlers.NewHandler(cfg, cache, discovery, prpc)
 	alertHandlers := handlers.NewAlertHandlers(alertService)
 	historyHandlers := handlers.NewHistoryHandlers(historyService)
@@ -623,12 +636,13 @@ func main() {
 	analyticsHandlers := handlers.NewAnalyticsHandlers(mongoService)
 	cacheHandlers := handlers.NewCacheHandlers(cache)
 
-	// Setup all routes (same as before)
+	// 6. Routes
 	e.GET("/health", h.GetHealth)
 	e.GET("/cache/status", cacheHandlers.GetCacheStatus)
 	e.POST("/cache/clear", cacheHandlers.ClearCache)
 
 	api := e.Group("/api")
+	
 	api.GET("/status", h.GetStatus)
 	api.GET("/nodes", h.GetNodes)
 	api.GET("/nodes/:id", h.GetNode)
@@ -677,7 +691,7 @@ func main() {
 
 	api.GET("/comparison", comparisonHandlers.GetCrossChainComparison)
 
-	// 4. Start HTTP Server FIRST
+	// 7. Start HTTP Server
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	
 	go func() {
@@ -687,22 +701,16 @@ func main() {
 		}
 	}()
 
-	// Give the server a moment to start
-	time.Sleep(100 * time.Millisecond)
-	log.Println("✓ HTTP Server is listening")
+	// Small delay to ensure server is listening
+	time.Sleep(200 * time.Millisecond)
+	log.Println("✓ HTTP Server ready")
 
-	// 5. NOW start background services asynchronously
+	// 8. Start remaining services in background
 	go func() {
-		log.Println("=== Starting Background Services ===")
+		log.Println("⏳ Initializing remaining services...")
 		
-		creditsService.Start()
-		log.Println("✓ Credits Service started")
-		
-		discovery.Start()
-		log.Println("✓ Node Discovery started")
-		
-		log.Println("⏳ Waiting for initial node discovery...")
-		time.Sleep(30 * time.Second)
+		// Reduced wait time - adjust based on your needs
+		time.Sleep(10 * time.Second)
 		
 		cache.StartCacheWarmer()
 		log.Println("✓ Cache Service started")
@@ -720,10 +728,10 @@ func main() {
 			log.Println("✓ Alerts loaded from MongoDB")
 		}
 		
-		log.Println("=== All Background Services Running ===")
+		log.Println("=== All Services Running ===")
 	}()
 
-	// 6. Wait for interrupt signal
+	// 9. Graceful Shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
@@ -745,5 +753,3 @@ func main() {
 	}
 	log.Println("✓ Server exited cleanly")
 }
-
-

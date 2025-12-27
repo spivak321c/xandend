@@ -335,9 +335,7 @@ func main() {
 	// 	log.Println("✓ Telegram Bot connected")
 	// }
 
-	e.GET("/kaithheathcheck", func(c echo.Context) error {
-	return c.NoContent(http.StatusOK)
-})
+	
 
 	// PRPC Client
 	prpc := services.NewPRPCClient(cfg)
@@ -422,9 +420,9 @@ func main() {
 			return next(c)
 		}
 	})
-// 	e.GET("/kaithhealth", func(c echo.Context) error {
-// 	return c.NoContent(http.StatusOK)
-// })
+e.GET("/kaithheathcheck", func(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
+})
 
 	// 5. Handlers
 	h := handlers.NewHandler(cfg, cache, discovery, prpc)

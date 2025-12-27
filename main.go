@@ -335,6 +335,10 @@ func main() {
 	// 	log.Println("✓ Telegram Bot connected")
 	// }
 
+	e.GET("/kaithheathcheck", func(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
+})
+
 	// PRPC Client
 	prpc := services.NewPRPCClient(cfg)
 

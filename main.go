@@ -710,7 +710,7 @@ func main() {
 		log.Println("⏳ Initializing remaining services...")
 		
 		// Reduced wait time - adjust based on your needs
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		
 		cache.StartCacheWarmer()
 		log.Println("✓ Cache Service started")

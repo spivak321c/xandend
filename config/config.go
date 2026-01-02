@@ -13,13 +13,19 @@ import (
 )
 
 type Config struct {
-	Server  ServerConfig  `json:"server"`
-	PRPC    PRPCConfig    `json:"prpc"`
-	Polling PollingConfig `json:"polling"`
-	Cache   CacheConfig   `json:"cache"`
-	Redis   RedisConfig   `json:"redis"`   // NEW
-	GeoIP   GeoIPConfig   `json:"geoip"`
-	MongoDB MongoDBConfig `json:"mongodb"`
+	Server       ServerConfig       `json:"server"`
+	PRPC         PRPCConfig         `json:"prpc"`
+	Polling      PollingConfig      `json:"polling"`
+	Cache        CacheConfig        `json:"cache"`
+	Redis        RedisConfig        `json:"redis"` // NEW
+	GeoIP        GeoIPConfig        `json:"geoip"`
+	MongoDB      MongoDBConfig      `json:"mongodb"`
+	Registration RegistrationConfig `json:"registration"`
+}
+
+// NEW: Registration Configuration
+type RegistrationConfig struct {
+	CSVPath string `json:"csv_path"`
 }
 
 type ServerConfig struct {
@@ -73,10 +79,10 @@ func LoadConfig() (*Config, error) {
 	// Default configuration
 	cfg := &Config{
 		Server: ServerConfig{
-			Port: 8080,
-			Host: "0.0.0.0",
+			Port:           8080,
+			Host:           "0.0.0.0",
 			AllowedOrigins: []string{"*"},
-			SeedNodes: []string{},
+			SeedNodes:      []string{},
 		},
 		PRPC: PRPCConfig{
 			DefaultPort: 6000,
@@ -84,9 +90,9 @@ func LoadConfig() (*Config, error) {
 			MaxRetries:  3,
 		},
 		Polling: PollingConfig{
-			DiscoveryInterval:   60,
-			StatsInterval:       30,
-			HealthCheckInterval: 60,
+			DiscoveryInterval:   60,  // Peer discovery every 60s
+			StatsInterval:       30,  // Cache refresh every 30s (more frequent due to fast gossip)
+			HealthCheckInterval: 120, // Health checks every 2 minutes (less aggressive)
 			StaleThreshold:      5,
 		},
 		Cache: CacheConfig{
@@ -98,7 +104,7 @@ func LoadConfig() (*Config, error) {
 			Password: "",
 			DB:       0,
 			Enabled:  true, // Enable Redis by default
-			UseTLS: true,
+			UseTLS:   true,
 		},
 		GeoIP: GeoIPConfig{
 			DBPath: "",
@@ -107,6 +113,9 @@ func LoadConfig() (*Config, error) {
 			URI:      "mongodb://localhost:27017",
 			Database: "xandeum_analytics",
 			Enabled:  true,
+		},
+		Registration: RegistrationConfig{
+			CSVPath: "",
 		},
 	}
 
@@ -262,6 +271,11 @@ func loadEnv(cfg *Config) {
 	}
 	if val := os.Getenv("MONGODB_ENABLED"); val != "" {
 		cfg.MongoDB.Enabled = val == "true" || val == "1"
+	}
+
+	// Registration configuration
+	if val := os.Getenv("REGISTRATION_CSV_PATH"); val != "" {
+		cfg.Registration.CSVPath = val
 	}
 }
 

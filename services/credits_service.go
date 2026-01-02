@@ -1,5 +1,3 @@
-// ============================================
-// FILE: backend/services/credits_service.go
 // REPLACE the entire file with proper sorting
 // ============================================
 package services
@@ -250,7 +248,7 @@ func (cs *CreditsService) GetCreditsStats() map[string]interface{} {
 	})
 	medianCredits := sorted[len(sorted)/2].Credits
 	
-	return map[string]interface{}{
+	return map[string]any{
 		"total_nodes":    len(cs.credits),
 		"total_credits":  totalCredits,
 		"average_credits": avgCredits,

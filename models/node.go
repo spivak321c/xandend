@@ -2,12 +2,13 @@ package models
 
 import "time"
 
+
 type Node struct {
-	// Identity - UPDATED: ID is now always the Pubkey
-	ID      string   `json:"id"`      // Always the Pubkey once discovered
-	Pubkey  string   `json:"pubkey"`  // Public key of the node
+	// Identity - UPDATED: ID is now composite "pubkey|ip"
+	ID      string `json:"id"`      // Composite key: "pubkey|ip" or "unknown|ip"
+	Pubkey  string `json:"pubkey"`  // Public key of the node
 	
-	// Multi-address support - NEW
+	// Multi-address support
 	Addresses []NodeAddress `json:"addresses"` // All known addresses for this node
 	
 	// Primary address (for backward compatibility and main RPC endpoint)
@@ -18,11 +19,12 @@ type Node struct {
 	Version string `json:"version"`
 
 	// Status
-	IsOnline  bool      `json:"is_online"`
-	IsPublic  bool      `json:"is_public"`  // Whether node accepts public connections
-	LastSeen  time.Time `json:"last_seen"`
-	FirstSeen time.Time `json:"first_seen"`
-	Status    string    `json:"status"` // "online", "warning", "offline"
+	IsOnline     bool      `json:"is_online"`
+	IsPublic     bool      `json:"is_public"`      // Whether node accepts public connections
+	IsRegistered bool      `json:"is_registered"`  // NEW: Whether pubkey is in registration CSV
+	LastSeen     time.Time `json:"last_seen"`
+	FirstSeen    time.Time `json:"first_seen"`
+	Status       string    `json:"status"` // "online", "warning", "offline"
 
 	// Geo Estimation (of primary IP)
 	Country string  `json:"country"`

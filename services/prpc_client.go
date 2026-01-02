@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net"
 	"strings"
 	"time"
 
@@ -18,11 +19,16 @@ type PRPCClient struct {
 	httpClient *http.Client
 }
 
+
 func NewPRPCClient(cfg *config.Config) *PRPCClient {
-	// Use configured timeout or default to 5 seconds
-	timeout := cfg.PRPCTimeoutDuration()
-	if timeout > 10*time.Second {
-		timeout = 5 * time.Second // Cap at 5 seconds for faster failures
+	// CRITICAL FIX: Use longer timeout for health checks
+	// With 224 nodes checking simultaneously, network congestion is expected
+	timeout := 10 * time.Second // INCREASED from 5s to 10s
+	
+	// Use configured timeout if reasonable
+	configTimeout := cfg.PRPCTimeoutDuration()
+	if configTimeout > 0 && configTimeout <= 15*time.Second {
+		timeout = configTimeout
 	}
 	
 	return &PRPCClient{
@@ -34,6 +40,11 @@ func NewPRPCClient(cfg *config.Config) *PRPCClient {
 				MaxIdleConnsPerHost: 10,
 				IdleConnTimeout:     30 * time.Second,
 				DisableKeepAlives:   false,
+				// ADDED: Increase dial timeout for congested network
+				DialContext: (&net.Dialer{
+					Timeout:   5 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
 			},
 		},
 	}

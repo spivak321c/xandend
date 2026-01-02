@@ -1,0 +1,420 @@
+package utils
+
+import (
+	// "log"
+	"time"
+
+	"xand/models"
+)
+
+// DetermineStatus updates the node's status based on latency and uptime
+// func DetermineStatus(n *models.Node) {
+// 	lastSeen := time.Since(n.LastSeen)
+
+// 	// If node was just discovered (within last 5 minutes), be lenient
+// 	justDiscovered := time.Since(n.FirstSeen) < 5*time.Minute
+
+// 	// Check Offline triggers
+// 	if lastSeen > 5*time.Minute {
+// 		n.Status = "offline"
+// 		return
+// 	}
+
+// 	// For newly discovered nodes, use relaxed criteria
+// 	if justDiscovered {
+// 		if n.IsOnline && lastSeen < 2*time.Minute {
+// 			n.Status = "online"
+// 			return
+// 		}
+// 	}
+
+// 	// For established nodes, use strict criteria
+// 	if n.UptimeScore < 85 {
+// 		n.Status = "offline"
+// 		return
+// 	}
+
+// 	// Check Online conditions
+// 	if lastSeen < 2*time.Minute && n.UptimeScore > 95 && n.ResponseTime < 1000 {
+// 		n.Status = "online"
+// 		return
+// 	}
+
+// 	// Default fallback
+// 	n.Status = "warning"
+// }
+
+// COMPLETELY REPLACE the DetermineStatus function:
+
+// func DetermineStatus(n *models.Node) {
+// 	lastSeen := time.Since(n.LastSeen)
+
+// 	// If node was just discovered (within last 5 minutes), be lenient
+// 	justDiscovered := time.Since(n.FirstSeen) < 5*time.Minute
+
+// 	// CRITICAL: Check if node hasn't responded recently
+// 	// Offline: No response in last 3 minutes
+// 	if lastSeen > 3*time.Minute {
+// 		n.Status = "offline"
+// 		n.IsOnline = false
+// 		return
+// 	}
+
+// 	// For newly discovered nodes, use relaxed criteria
+// 	if justDiscovered {
+// 		if n.IsOnline && lastSeen < 2*time.Minute {
+// 			n.Status = "online"
+// 			return
+// 		}
+// 	}
+
+// 	// Check call history for reliability
+// 	failureRate := 0.0
+// 	if len(n.CallHistory) > 0 {
+// 		failures := 0
+// 		for _, success := range n.CallHistory {
+// 			if !success {
+// 				failures++
+// 			}
+// 		}
+// 		failureRate = float64(failures) / float64(len(n.CallHistory))
+// 	}
+
+// 	// Offline: High failure rate OR very low uptime
+// 	if failureRate > 0.5 || n.UptimeScore < 50 {
+// 		n.Status = "offline"
+// 		n.IsOnline = false
+// 		return
+// 	}
+
+// 	// Warning: Moderate issues
+// 	if failureRate > 0.2 || n.UptimeScore < 85 || n.ResponseTime > 2000 {
+// 		n.Status = "warning"
+// 		return
+// 	}
+
+// 	// Online: Good performance
+// 	if lastSeen < 2*time.Minute && n.UptimeScore > 85 && n.ResponseTime < 1000 {
+// 		n.Status = "online"
+// 		return
+// 	}
+
+// 	// Default to warning if unclear
+// 	n.Status = "warning"
+// }
+
+// func DetermineStatus(n *models.Node) {
+// 	lastSeen := time.Since(n.LastSeen)
+
+// 	// If node was just discovered (within last 5 minutes), be lenient
+// 	justDiscovered := time.Since(n.FirstSeen) < 5*time.Minute
+
+// 	// CRITICAL FIX: Be less aggressive about marking offline
+// 	// Nodes in gossip network that haven't been directly contacted may still be online
+// 	// Only mark offline if we've actually tried to contact them and failed
+
+// 	// If we haven't tried to contact the node yet (TotalCalls == 0), use peer data
+// 	if n.TotalCalls == 0 {
+// 		// Node created from peer list, use last_seen from gossip
+// 		if lastSeen > 10*time.Minute {
+// 			n.Status = "offline"
+// 			n.IsOnline = false
+// 		} else if lastSeen > 5*time.Minute {
+// 			n.Status = "warning"
+// 		} else {
+// 			n.Status = "online"
+// 			n.IsOnline = true
+// 		}
+// 		return
+// 	}
+
+// 	// If we have tried to contact the node, use actual connectivity data
+// 	if lastSeen > 5*time.Minute {
+// 		n.Status = "offline"
+// 		n.IsOnline = false
+// 		return
+// 	}
+
+// 	// For newly discovered nodes, use relaxed criteria
+// 	if justDiscovered {
+// 		if n.IsOnline && lastSeen < 2*time.Minute {
+// 			n.Status = "online"
+// 			return
+// 		}
+// 	}
+
+// 	// Check call history for reliability
+// 	failureRate := 0.0
+// 	if len(n.CallHistory) > 0 {
+// 		failures := 0
+// 		for _, success := range n.CallHistory {
+// 			if !success {
+// 				failures++
+// 			}
+// 		}
+// 		failureRate = float64(failures) / float64(len(n.CallHistory))
+// 	}
+
+// 	// Offline: High failure rate OR very low uptime
+// 	if failureRate > 0.7 || n.UptimeScore < 30 {
+// 		n.Status = "offline"
+// 		n.IsOnline = false
+// 		return
+// 	}
+
+// 	// Warning: Moderate issues
+// 	if failureRate > 0.3 || n.UptimeScore < 70 || n.ResponseTime > 2000 {
+// 		n.Status = "warning"
+// 		return
+// 	}
+
+// 	// Online: Good performance
+// 	if lastSeen < 3*time.Minute && n.UptimeScore > 70 && n.ResponseTime < 1500 {
+// 		n.Status = "online"
+// 		return
+// 	}
+
+// 	// Default to warning if unclear
+// 	n.Status = "warning"
+// }
+
+// // CalculateScore computes the node's performance score (0-100)
+// func CalculateScore(n *models.Node) {
+// 	// 1. Response Time (40%)
+// 	// <100ms: 40
+// 	// 100-500ms: 30
+// 	// 500-1000ms: 20
+// 	// >1000ms: 10
+// 	var scoreResponse float64
+// 	if n.ResponseTime < 100 {
+// 		scoreResponse = 40
+// 	} else if n.ResponseTime < 500 {
+// 		scoreResponse = 30
+// 	} else if n.ResponseTime < 1000 {
+// 		scoreResponse = 20
+// 	} else {
+// 		scoreResponse = 10
+// 	}
+
+// 	// 2. Success Rate (30%)
+// 	// (successful_calls / 10) * 30
+// 	successCount := 0
+// 	for _, ok := range n.CallHistory {
+// 		if ok {
+// 			successCount++
+// 		}
+// 	}
+// 	n.SuccessCalls = successCount
+
+// 	var scoreSuccess float64
+// 	if len(n.CallHistory) > 0 {
+// 		rate := float64(successCount) / float64(len(n.CallHistory))
+// 		scoreSuccess = rate * 30
+// 	}
+
+// 	// 3. Uptime (30%)
+// 	// (uptime_percentage / 100) * 30
+// 	scoreUptime := (n.UptimeScore / 100.0) * 30
+
+// 	n.PerformanceScore = scoreResponse + scoreSuccess + scoreUptime
+
+// 	// Cap at 100
+// 	if n.PerformanceScore > 100 {
+// 		n.PerformanceScore = 100
+// 	}
+// }
+
+func DetermineStatus(n *models.Node) {
+	lastSeen := time.Since(n.LastSeen)
+	justDiscovered := time.Since(n.FirstSeen) < 5*time.Minute
+
+	// PRIORITY 1: Check RPC connectivity (direct evidence)
+	hasRecentRPCSuccess := false
+	recentRPCFailures := 0
+	totalAttempts := 0
+	
+	if len(n.CallHistory) > 0 {
+		// Look at last 5 attempts for better sample
+		lookback := 5
+		if len(n.CallHistory) < lookback {
+			lookback = len(n.CallHistory)
+		}
+		
+		for i := len(n.CallHistory) - lookback; i < len(n.CallHistory); i++ {
+			totalAttempts++
+			if n.CallHistory[i] {
+				hasRecentRPCSuccess = true
+			} else {
+				recentRPCFailures++
+			}
+		}
+	}
+	
+	// CRITICAL: Calculate failure rate to detect network-wide issues
+	failureRate := 0.0
+	if totalAttempts > 0 {
+		failureRate = float64(recentRPCFailures) / float64(totalAttempts)
+	}
+	
+	// PRIORITY 2: Check gossip activity (indirect evidence)
+	// UPDATED: Gossip now happens every 1 second (changed from 120s)
+	// Full propagation should happen in < 2-5 minutes
+	hasRecentGossipActivity := lastSeen < 3*time.Minute  // More lenient for propagation
+	hasVeryRecentGossipActivity := lastSeen < 30*time.Second  // Much tighter for active nodes
+	
+	// === DECISION TREE (Conservative) ===
+	
+	// CASE 1: Never contacted via RPC - trust gossip data
+	// UPDATED: With 1-second gossip, stale data is more meaningful
+	if n.TotalCalls == 0 {
+		if lastSeen > 5*time.Minute {  // Stricter - gossip should update faster
+			n.Status = "offline"
+			n.IsOnline = false
+		} else if lastSeen > 2*time.Minute {
+			n.Status = "warning"
+			n.IsOnline = true
+		} else {
+			n.Status = "online"
+			n.IsOnline = true
+		}
+		return
+	}
+	
+	// CASE 2: Have RPC history - combine signals intelligently
+	
+	// CLEARLY ONLINE: Recent RPC success (within last 5 attempts)
+	if hasRecentRPCSuccess && hasRecentGossipActivity {
+		n.Status = "online"
+		n.IsOnline = true
+		return
+	}
+	
+	// CRITICAL FIX: If many RPC failures but recent gossip, trust gossip
+	// This handles network congestion during mass health checks
+	// High failure rate (>60%) suggests network issue, not node issue
+	if failureRate > 0.6 && hasVeryRecentGossipActivity {
+		// Network congestion likely - trust gossip
+		n.Status = "online"
+		n.IsOnline = true
+		return
+	}
+	
+	// ONLINE BUT FIREWALLED: Gossip shows activity, but RPC fails
+	// This is common for nodes behind NAT/firewalls
+	// UPDATED: With 1-second gossip, 30 seconds of activity is very recent
+	if hasVeryRecentGossipActivity && lastSeen < 1*time.Minute {
+		if recentRPCFailures >= 3 {
+			// Consistently unreachable via RPC, but active in gossip
+			n.Status = "warning"
+			n.IsOnline = true
+		} else {
+			n.Status = "online"
+			n.IsOnline = true
+		}
+		return
+	}
+	
+	// POSSIBLE ONLINE: Moderate gossip activity (1-3 min)
+	// UPDATED: Tighter window due to faster gossip
+	if hasRecentGossipActivity && lastSeen < 3*time.Minute {
+		if recentRPCFailures >= 4 {
+			n.Status = "warning"
+			n.IsOnline = true
+		} else {
+			n.Status = "online"
+			n.IsOnline = true
+		}
+		return
+	}
+	
+	// DEGRADING: Old gossip (3-5 min) + RPC failures
+	// UPDATED: Faster gossip means older timestamps are more significant
+	if lastSeen >= 3*time.Minute && lastSeen <= 5*time.Minute {
+		// Calculate overall failure rate
+		failureRate := 0.0
+		if len(n.CallHistory) > 0 {
+			failures := 0
+			for _, success := range n.CallHistory {
+				if !success {
+					failures++
+				}
+			}
+			failureRate = float64(failures) / float64(len(n.CallHistory))
+		}
+		
+		// Only mark offline if failure rate is very high
+		if failureRate > 0.8 {
+			n.Status = "offline"
+			n.IsOnline = false
+		} else {
+			n.Status = "warning"
+			n.IsOnline = true
+		}
+		return
+	}
+	
+	// CLEARLY OFFLINE: No activity for 5+ minutes
+	// UPDATED: With 1-second gossip, 5 minutes is plenty of time for updates
+	if lastSeen > 5*time.Minute {
+		n.Status = "offline"
+		n.IsOnline = false
+		return
+	}
+	
+	// For newly discovered nodes, be optimistic
+	if justDiscovered && lastSeen < 3*time.Minute {
+		n.Status = "online"
+		n.IsOnline = true
+		return
+	}
+	
+	// DEFAULT FALLBACK: If uncertain, prefer warning over offline
+	if lastSeen < 5*time.Minute {
+		n.Status = "warning"
+		n.IsOnline = true
+	} else {
+		n.Status = "offline"
+		n.IsOnline = false
+	}
+}
+
+// CalculateScore computes the node's performance score (0-100)
+func CalculateScore(n *models.Node) {
+	// 1. Response Time (40%)
+	var scoreResponse float64
+	if n.ResponseTime < 100 {
+		scoreResponse = 40
+	} else if n.ResponseTime < 500 {
+		scoreResponse = 30
+	} else if n.ResponseTime < 1000 {
+		scoreResponse = 20
+	} else if n.ResponseTime < 2000 {
+		scoreResponse = 10
+	} else {
+		scoreResponse = 5
+	}
+
+	// 2. Success Rate (30%)
+	successCount := 0
+	for _, ok := range n.CallHistory {
+		if ok {
+			successCount++
+		}
+	}
+	n.SuccessCalls = successCount
+
+	var scoreSuccess float64
+	if len(n.CallHistory) > 0 {
+		rate := float64(successCount) / float64(len(n.CallHistory))
+		scoreSuccess = rate * 30
+	}
+
+	// 3. Uptime (30%)
+	scoreUptime := (n.UptimeScore / 100.0) * 30
+
+	n.PerformanceScore = scoreResponse + scoreSuccess + scoreUptime
+
+	if n.PerformanceScore > 100 {
+		n.PerformanceScore = 100
+	}
+}

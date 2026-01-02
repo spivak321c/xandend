@@ -71,6 +71,7 @@ func (h *Handler) GetNodes(c echo.Context) error {
 	}
 
 	if !found {
+		// CHANGED: Get ALL nodes including duplicates
 		nodes = h.Discovery.GetNodes()
 	}
 
@@ -82,21 +83,12 @@ func (h *Handler) GetNodes(c echo.Context) error {
 		}
 	}
 
-		includeOffline := true
+	includeOffline := true
 	if c.QueryParam("include_offline") == "false" {
 		includeOffline = false
 	}
 
 	// Apply status filter
-	// if statusFilter != "" {
-	// 	filteredNodes := make([]*models.Node, 0)
-	// 	for _, node := range completeNodes {
-	// 		if node.Status == statusFilter {
-	// 			filteredNodes = append(filteredNodes, node)
-	// 		}
-	// 	}
-	// 	completeNodes = filteredNodes
-	// }
 	if statusFilter != "" {
 		filteredNodes := make([]*models.Node, 0)
 		for _, node := range completeNodes {
@@ -166,6 +158,14 @@ func (h *Handler) GetNodes(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
+
+
+
+
+
+
+
+
 
 // GetNode godoc
 // @Summary Get a single node by ID
